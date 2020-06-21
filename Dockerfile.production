@@ -1,0 +1,33 @@
+FROM quay.io/aboutsource/ruby:2.7
+
+RUN mkdir /srv/app
+WORKDIR /srv/app
+
+RUN apt-get update \
+  && apt-get install -y \
+    libpq-dev \
+    nodejs \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY Gemfile* ./
+RUN bundle config set without 'test development capistrano mysql sqlite3' \
+  && bundle install --jobs 3 --retry 3
+
+COPY . ./
+
+ENV RAILS_ENV=production \
+    RAILS_SERVE_STATIC_FILES=true \
+    RAILS_LOG_TO_STDOUT=true
+
+RUN bundle exec rails assets:precompile \
+  DATABASE_URL=postgresql://fake/db \
+  FRAB_HOST=localhost \
+  FRAB_PROTOCOL=http \
+  SECRET_KEY_BASE=secret
+
+VOLUME /srv/app/public/system
+
+EXPOSE 3000
+
+CMD ["bin/rails", "server", "--binding", "0.0.0.0"]

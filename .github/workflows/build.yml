@@ -1,0 +1,19 @@
+name: Build docker image for new releases
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v2
+    - name: Build docker image
+      run: docker build . --file Dockerfile.production --tag docker.pkg.github.com/zukunftfueralle/frab/app:${GITHUB_REF##*/}
+    - name: Login to docker registry
+      run: echo ${{ secrets.GITHUB_TOKEN }}| docker login docker.pkg.github.com -u github-actions --password-stdin
+    - name: Push image
+      run: docker push docker.pkg.github.com/zukunftfueralle/frab/app:${GITHUB_REF##*/}
